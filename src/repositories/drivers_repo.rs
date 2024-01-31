@@ -1,7 +1,6 @@
 use crate::models::driver::Driver;
 use sqlx::{mysql::MySqlRow, MySql, Pool, Row};
 use tracing::error;
-use tracing_subscriber::fmt::format;
 
 #[derive(Clone)]
 pub struct DriversRepository {
