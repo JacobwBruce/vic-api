@@ -1,4 +1,10 @@
+mod handlers;
+mod models;
+mod repositories;
+
 use axum::routing::get;
+use handlers::driver::drivers_router;
+use repositories::drivers_repo::DriversRepository;
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use tower::ServiceBuilder;
@@ -20,9 +26,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::subscriber::set_global_default(FmtSubscriber::default())?;
 
+    let drivers_repo = DriversRepository {
+        db: Box::leak(Box::new(db)),
+    };
+
     let app = axum::Router::new()
         .route("/", get(|| async { "Hello, World!" }))
-        .with_state(db)
+        .nest("/drivers", drivers_router(&drivers_repo))
         .layer(ServiceBuilder::new().layer(CorsLayer::permissive()));
 
     info!("Starting server");
