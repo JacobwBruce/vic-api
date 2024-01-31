@@ -1,6 +1,7 @@
 use crate::models::driver::Driver;
 use sqlx::{mysql::MySqlRow, MySql, Pool, Row};
 use tracing::error;
+use tracing_subscriber::fmt::format;
 
 #[derive(Clone)]
 pub struct DriversRepository {
@@ -19,7 +20,7 @@ const BASE_QUERY: &str = "
 const GROUP_BY_QUERY: &str = "GROUP BY D.id, D.firstName, D.lastName, D.email, D.phone, D.address, D.businessName, D.icNumber, C.iataCode";
 
 pub enum DriverError {
-    // NotFound,
+    NotFound,
     Other,
 }
 
@@ -79,12 +80,19 @@ impl DriversRepository {
             .await;
 
         match res {
-            Ok(driver) => {
-                let driver = get_driver_from_row(&driver);
+            Ok(row) => {
+                let driver = get_driver_from_row(&row);
                 Ok(driver)
             }
             Err(err) => {
                 error!("Error getting driver by phone number: {:?}", err);
+
+                if let sqlx::Error::RowNotFound = err {
+                    return Err(Error {
+                        message: format!("Driver with phone number {} not found", phone_number),
+                        error: DriverError::NotFound,
+                    });
+                }
                 Err(Error {
                     message: "Internal Server Error".to_string(),
                     error: DriverError::Other,

@@ -1,5 +1,5 @@
 use crate::models::driver::Driver;
-use crate::repositories::drivers_repo::DriversRepository;
+use crate::repositories::drivers_repo::{DriverError, DriversRepository};
 use axum::{extract, http};
 
 use axum::routing::{get, Router};
@@ -37,15 +37,23 @@ async fn get_driver_by_phone_number(
     let driver = db.get_driver_by_phone_number(&phone_number).await;
     match driver {
         Ok(driver) => Ok((http::StatusCode::OK, axum::Json(driver))),
-        Err(_) => {
-            let response = ErrorResponse {
-                message: "Internal Server Error".to_string(),
-            };
-            Err((
-                http::StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(response),
-            ))
-        }
+        Err(err) => match err.error {
+            DriverError::NotFound => {
+                let response = ErrorResponse {
+                    message: err.message,
+                };
+                return Err((http::StatusCode::NOT_FOUND, axum::Json(response)));
+            }
+            _ => {
+                let response = ErrorResponse {
+                    message: "Internal Server Error".to_string(),
+                };
+                return Err((
+                    http::StatusCode::INTERNAL_SERVER_ERROR,
+                    axum::Json(response),
+                ));
+            }
+        },
     }
 }
 
