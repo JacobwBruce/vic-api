@@ -1,6 +1,6 @@
 use crate::models::driver::Driver;
 use sqlx::{mysql::MySqlRow, MySql, Pool, Row};
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Clone)]
 pub struct DriversRepository {
@@ -30,10 +30,10 @@ pub struct Error {
 
 fn get_driver_from_row(row: &MySqlRow) -> Driver {
     let vehicle_types_str: Option<String> = row.get(8); // Assuming index 8 corresponds to the 'vehicleTypes' column
-    let vehicle_types: Vec<String> = match vehicle_types_str {
-        Some(types) => types.split(",").map(|s| s.to_string()).collect(),
-        None => vec![],
-    };
+
+    let vehicle_types: Vec<String> = vehicle_types_str
+        .map(|types_str| types_str.split(',').map(String::from).collect())
+        .unwrap_or_else(Vec::new);
 
     Driver {
         first_name: row.get(0),

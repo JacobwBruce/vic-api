@@ -7,7 +7,7 @@ use axum::{
 pub async fn auth<B>(request: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
     if let Some(authorization) = request.headers().get("Authorization") {
         if let Some(auth_str) = authorization.to_str().ok() {
-            if auth_str.starts_with("key ") {
+            if auth_str.to_lowercase().starts_with("key ") {
                 let token_value = auth_str["key ".len()..].to_string();
 
                 if token_value == get_access_key() {
