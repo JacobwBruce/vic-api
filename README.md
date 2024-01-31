@@ -75,7 +75,7 @@ Follow the instructions below to get a local development server up and running.
    ```
 4. Set a DATABASE_URL environment variable
    ```
-   export ACCESS_KEY="<your DATABASE_URL>"
+   export DATABASE_URL="<your DATABASE_URL>"
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
