@@ -3,7 +3,7 @@ mod middleware;
 mod models;
 mod repositories;
 
-use axum::{middleware::from_fn, routing::get};
+use axum::{http, middleware::from_fn, routing::get};
 use handlers::driver::drivers_router;
 use repositories::drivers_repo::DriversRepository;
 use sqlx::mysql::MySqlPoolOptions;
@@ -11,9 +11,12 @@ use std::env;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use tracing_subscriber::FmtSubscriber;
 
-use crate::middleware::auth::auth;
+use crate::middleware::{auth::auth, logger::create_logger};
+
+pub async fn health() -> http::StatusCode {
+    http::StatusCode::OK
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,16 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&database_url)
         .await?;
 
-    tracing::subscriber::set_global_default(FmtSubscriber::default())?;
-
     let drivers_repo = DriversRepository {
         db: Box::leak(Box::new(db)),
     };
 
     let app = axum::Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
+        .route("/health", get(health))
         .nest("/drivers", drivers_router(&drivers_repo))
         .layer(ServiceBuilder::new().layer(CorsLayer::permissive()))
+        .layer(create_logger())
         .layer(from_fn(auth));
 
     info!("Starting server");

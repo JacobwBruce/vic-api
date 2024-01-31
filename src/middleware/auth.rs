@@ -3,8 +3,15 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use tracing::error;
 
 pub async fn auth<B>(request: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
+    // if request is to /health, allow it
+    if request.uri().path() == "/health" {
+        let response = next.run(request).await;
+        return Ok(response);
+    }
+
     if let Some(authorization) = request.headers().get("Authorization") {
         if let Some(auth_str) = authorization.to_str().ok() {
             if auth_str.to_lowercase().starts_with("key ") {
@@ -18,6 +25,7 @@ pub async fn auth<B>(request: Request<B>, next: Next<B>) -> Result<Response, Sta
         }
     }
 
+    error!("Unauthorized request");
     Err(StatusCode::UNAUTHORIZED)
 }
 
