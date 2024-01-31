@@ -30,8 +30,28 @@ async fn get_drivers(
     }
 }
 
+async fn get_driver_by_phone_number(
+    extract::Path((phone_number,)): extract::Path<(String,)>,
+    extract::State(db): extract::State<DriversRepository>,
+) -> Result<(http::StatusCode, axum::Json<Driver>), (http::StatusCode, axum::Json<ErrorResponse>)> {
+    let driver = db.get_driver_by_phone_number(&phone_number).await;
+    match driver {
+        Ok(driver) => Ok((http::StatusCode::OK, axum::Json(driver))),
+        Err(_) => {
+            let response = ErrorResponse {
+                message: "Internal Server Error".to_string(),
+            };
+            Err((
+                http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(response),
+            ))
+        }
+    }
+}
+
 pub fn drivers_router<S>(db: &DriversRepository) -> Router<S> {
     Router::new()
         .route("/", get(get_drivers))
+        .route("/:phone_number", get(get_driver_by_phone_number))
         .with_state(db.clone())
 }
